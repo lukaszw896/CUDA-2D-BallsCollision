@@ -5,7 +5,7 @@
 #include <time.h>
 #include <stdlib.h>
 #include <stdio.h>
-#define N 20
+#define N 3000
 #define G 0.0006f
 #define S 0.95f
 #include "cuda_runtime.h"
@@ -19,7 +19,7 @@ int windowHeight = 880; 	// Windowed mode's height
 int windowPosX = 50;  	// Windowed mode's top-left corner x
 int windowPosY = 50;  	// Windowed mode's top-left corner y
 
-GLfloat ballRadius = 0.02f;   // Radius of the bouncing ball
+GLfloat ballRadius = 0.003f;   // Radius of the bouncing ball
 GLfloat ballXMax, ballXMin, ballYMax, ballYMin;
 
 int ileiteracji = 0;
@@ -216,8 +216,8 @@ __global__ void initGpuData(int n, float* speedTableX, float *speedTableY){
 	for (int i = 0; i < n; i++){
 		speedTableX_C[i] = speedTableX[i];
 		speedTableY_C[i] = speedTableY[i];
-		tmpSpeedTableX[i] = speedTableX[i];
-		tmpSpeedTableY[i] = speedTableY[i];
+		/*tmpSpeedTableX[i] = speedTableX[i];
+		tmpSpeedTableY[i] = speedTableY[i];*/
 	}	
 	for (int i = 0; i < N*N; i++){
 		collisionMatrix[i] = false;
@@ -242,29 +242,29 @@ __global__ void addKernel(float *possitionXTable_C, float *possitionTableY_C, fl
 				possitionXTable_C[k] = xmax;
 				speedTableX_C[k] = -speedTableX_C[k];
 				speedTableX_C[k] *= springness;
-				tmpSpeedTableX[k] = -tmpSpeedTableX[k];
-				tmpSpeedTableX[k ] *= springness;
+				/*tmpSpeedTableX[k] = -tmpSpeedTableX[k];
+				tmpSpeedTableX[k ] *= springness;*/
 			}
 			else if (possitionXTable_C[k] < xmin) {
 				possitionXTable_C[k] = xmin;
 				speedTableX_C[k] = -speedTableX_C[k];
 				speedTableX_C[k] *= springness;
-				tmpSpeedTableX[k] = -tmpSpeedTableX[k];
-				tmpSpeedTableX[k] *= springness;
+				/*tmpSpeedTableX[k] = -tmpSpeedTableX[k];
+				tmpSpeedTableX[k] *= springness;*/
 			}
 			if (possitionTableY_C[k] > ymax) {
 				possitionTableY_C[k] = ymax;
 				speedTableY_C[k] = -speedTableY_C[k];
 				speedTableY_C[k] *= springness;
-				tmpSpeedTableY[k] = -tmpSpeedTableY[k];
-				tmpSpeedTableY[k] *= springness;
+				/*tmpSpeedTableY[k] = -tmpSpeedTableY[k];
+				tmpSpeedTableY[k] *= springness;*/
 			}
 			else if (possitionTableY_C[k]< ymin) {
 				possitionTableY_C[k] = ymin;
 				speedTableY_C[k] = -speedTableY_C[k];
 				speedTableY_C[k] *= springness;
-				tmpSpeedTableY[k] = -tmpSpeedTableY[k];
-				tmpSpeedTableY[k] *= springness;
+				/*tmpSpeedTableY[k] = -tmpSpeedTableY[k];
+				tmpSpeedTableY[k] *= springness;*/
 			}
 			//coordinateX = 50 * ballTable[k * 2] + 50;
 			//coordinateY = 50 * ballTable[k * 2 + 1] + 50;
@@ -273,26 +273,32 @@ __global__ void addKernel(float *possitionXTable_C, float *possitionTableY_C, fl
 			int ballDetected = detectCollision(possitionXTable_C[k], possitionTableY_C[k], k, n, possitionXTable_C,possitionTableY_C ,radius);
 
 			if (ballDetected != -1){
-			tmpSpeedTableX[k * 2] = speedTableX_C[ballDetected] * springness;
-			tmpSpeedTableX[ballDetected * 2] = speedTableX_C[k] * springness;
+				float tmpSpeedX = speedTableX_C[k] * springness;
+				float tmpSpeedY = speedTableY_C[k] * springness;
+				speedTableX_C[k] = speedTableX_C[ballDetected];
+				speedTableY_C[k] = speedTableY_C[ballDetected];
+				speedTableX_C[ballDetected] = tmpSpeedX;
+				speedTableY_C[ballDetected] = tmpSpeedY;
+			/*tmpSpeedTableX[k] = speedTableX_C[ballDetected] * springness;
+			tmpSpeedTableX[ballDetected] = speedTableX_C[k] * springness;
 			tmpSpeedTableY[k] = speedTableY_C[ballDetected] * springness;
-			tmpSpeedTableY[ballDetected] = speedTableY_C[k] * springness;
+			tmpSpeedTableY[ballDetected] = speedTableY_C[k] * springness;*/
 			}
 
 			//gravity
 			speedTableY_C[k] -= 0.01f;
-			tmpSpeedTableY[k] -= 0.01f;
+			//tmpSpeedTableY[k] -= 0.01f;
 		}
 		k += blockDim.x * gridDim.x;
 	}
-	k = blockIdx.x * blockDim.x + threadIdx.x;
+	/*k = blockIdx.x * blockDim.x + threadIdx.x;
 	while (k < n){
 		if (k < n) {
 			speedTableX_C[k] = tmpSpeedTableX[k];
 			speedTableY_C[k] = tmpSpeedTableY[k];
 		}
 		k += blockDim.x * gridDim.x;
-	}
+	}*/
 
 }
 cudaError_t initData(int n, float *mojeSpeedXCUDA, float *mojeSpeedYCUDA)
